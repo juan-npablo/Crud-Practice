@@ -4,14 +4,15 @@ from datetime import datetime
 
 
 class ProjectBase(BaseModel):
-    project_id: Optional[int]
     name: str
-    description: Optional[int] = None
+    description: Optional[str] = None
+    
+
+class ProjectCreate(ProjectBase):
+    project_id: Optional[int]
     user_id: int
     created_at: Optional[datetime] = None
 
-class ProjectCreate(ProjectBase):
-    pass
 
 class ProjectUpdate(ProjectBase):
     name: Optional[str] = None

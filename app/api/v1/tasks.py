@@ -23,14 +23,25 @@ def read_tasks(
     project_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
-) -> List[Task] | None:
-    project = get_project_by_id(db, project_id, current_user.user_id)
+) -> List[TaskRead]:
+    project = get_project_by_id(db, project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No se encontró el proyecto"
         )
-    return get_tasks_for_project(db, project_id)
+    tasks = get_tasks_for_project(db, project_id)
+    if not tasks:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No se encontraron tareas para este proyecto"
+        )
+    if any(task.user_id != current_user.user_id for task in tasks):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permiso para acceder a estas tareas"
+        )
+    return tasks
 
 @router.post("/", response_model=TaskRead, status_code=status.HTTP_201_CREATED)
 def create_new_task(
@@ -39,21 +50,27 @@ def create_new_task(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> TaskRead:
-    project = get_project_by_id(db, project_id, current_user.user_id)
+    project = get_project_by_id(db, project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No se encontró el proyecto"
         )
+    if project.user_id != current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permiso para crear tareas en este proyecto"
+        )
     return create_task(db, project_id, task)
 
 @router.get("/{task_id}", response_model=TaskRead)
 def read_task(
+    project_id: int,
     task_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> TaskRead:
-    project = get_project_by_id(db, task_id, current_user.user_id)
+    project = get_project_by_id(db, project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -64,6 +81,11 @@ def read_task(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Tarea no encontrada"
+        )
+    if project.user_id != current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permiso para acceder a esta tarea"
         )
     return task
 
@@ -75,7 +97,7 @@ def update_task_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> TaskRead:
-    project = get_project_by_id(db, project_id, current_user.user_id)
+    project = get_project_by_id(db, project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -86,6 +108,11 @@ def update_task_endpoint(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Tarea no encontrada"
+        )
+    if project.user_id != current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permiso para actualizar esta tarea"
         )
     return update_task(db, task, task_update)
 
@@ -96,7 +123,7 @@ def delete_task_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> None:
-    project = get_project_by_id(db, project_id, current_user.user_id)
+    project = get_project_by_id(db, project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -107,6 +134,11 @@ def delete_task_endpoint(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Tarea no encontrada"
+        )
+    if project.user_id != current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permiso para eliminar esta tarea"
         )
     delete_task(db, task_id)
     return None

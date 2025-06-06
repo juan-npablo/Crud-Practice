@@ -3,14 +3,15 @@ from typing import Optional
 from datetime import datetime
 
 class TaskBase(BaseModel):
-    task_id: Optional[int] = None
     title: str
     description: Optional[str] = None
     state: str = "todo"
-    project_id: int
-    created_at: Optional[datetime] = None
+    
 
 class TaskCreate(TaskBase):
+    task_id: Optional[int] = None
+    #project_id: int
+    created_at: Optional[datetime] = None
     pass
 
 class TaskUpdate(TaskBase):

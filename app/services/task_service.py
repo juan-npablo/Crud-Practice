@@ -3,11 +3,16 @@ from db.models.task import Task
 from db.schemas.task import TaskCreate, TaskUpdate
 
 def create_task(db: Session, project_id: int, task: TaskCreate) -> Task:
-    db_task = Task(**task.model_dump(), project_id=project_id)
-    db.add(db_task)
+    new_task = Task(
+        title=task.title,
+        description=task.description,
+        state=task.state,
+        project_id=project_id
+    )
+    db.add(new_task)
     db.commit()
-    db.refresh(db_task)
-    return db_task
+    db.refresh(new_task)
+    return new_task
 
 def get_tasks_for_project(db: Session, project_id: int) -> list[Task]:
     return db.query(Task).filter(Task.project_id == project_id).all()
